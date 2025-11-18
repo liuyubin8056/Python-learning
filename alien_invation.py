@@ -14,22 +14,38 @@ class AlienInvasion:
         self.screen=pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         pygame.display.set_caption("Alien Invasion")
         self.clock=pygame.time.Clock()
-
         self.ship=Ship(self)
  
     def run_game(self): 
         """开始游戏的主循环""" 
         while True: 
-            # 侦听键盘和鼠标事件 
-            for event in pygame.event.get(): 
-                if event.type == pygame.QUIT: 
-                    sys.exit() 
- 
-            # 让最近绘制的屏幕可见 
-            self.screen.fill(self.settings.bg_color)
-            self.ship.blitme()
-            pygame.display.flip()
-            self.clock.tick(60)
+            self._check_events()
+            self.ship.update()
+            self._update_screen()            
+            self.clock.tick(240)
+    
+    def _check_events(self):
+        # 侦听键盘和鼠标事件 
+        for event in pygame.event.get(): 
+            if event.type == pygame.QUIT: 
+                sys.exit() 
+            elif event.type==pygame.KEYDOWN:
+                if event.key==pygame.K_RIGHT:
+                    self.ship.moving_right=True
+                if event.key==pygame.K_LEFT:
+                    self.ship.moving_left=True
+            elif event.type==pygame.KEYUP:
+                if event.key==pygame.K_RIGHT:
+                    self.ship.moving_right=False
+                if event.key==pygame.K_LEFT:
+                    self.ship.moving_left=False
+               
+    
+    def _update_screen(self):
+        #更新图像
+        self.screen.fill(self.settings.bg_color)
+        self.ship.blitme()
+        pygame.display.flip()
  
 if __name__ == '__main__': 
     # 创建游戏实例并运行游戏 
