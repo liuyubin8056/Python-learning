@@ -22,9 +22,11 @@ class Ship:
         if self.moving_right and self.rect.right < self.screen_rect.right:
             self.rect.x+=self.setting.ship_speed
         if self.moving_left and self.rect.left > 0:
-            self.rect.x-=self.setting.ship_speed
-            # self.rect.x-=1  浮点型转换有争议
-
+            if self.setting.ship_speed-int(self.setting.ship_speed)==0:
+                self.rect.x-=self.setting.ship_speed
+            else:
+                self.rect.x-=self.setting.ship_speed+1
+            
     def blitme(self): 
         """在指定位置绘制飞船""" 
         self.screen.blit(self.image, self.rect)

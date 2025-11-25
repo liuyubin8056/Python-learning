@@ -10,11 +10,18 @@ class AlienInvasion:
     def __init__(self): 
         """初始化游戏并创建游戏资源""" 
         pygame.init() 
-        self.settings=Settings()
-        self.screen=pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
+        self.settings = Settings()
+        
+        # 先创建屏幕
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.settings.screen_width = self.screen.get_rect().width 
+        self.settings.screen_height = self.screen.get_rect().height 
+        
         pygame.display.set_caption("Alien Invasion")
-        self.clock=pygame.time.Clock()
-        self.ship=Ship(self)
+        
+        # 然后创建需要屏幕的对象
+        self.ship = Ship(self)
+        self.clock = pygame.time.Clock()
  
     def run_game(self): 
         """开始游戏的主循环""" 
@@ -28,25 +35,34 @@ class AlienInvasion:
         # 侦听键盘和鼠标事件 
         for event in pygame.event.get(): 
             if event.type == pygame.QUIT: 
-                sys.exit() 
+                self._quit_game()
             elif event.type==pygame.KEYDOWN:
-                if event.key==pygame.K_RIGHT:
-                    self.ship.moving_right=True
-                if event.key==pygame.K_LEFT:
-                    self.ship.moving_left=True
+                self._check_keydown_events(event)
             elif event.type==pygame.KEYUP:
-                if event.key==pygame.K_RIGHT:
-                    self.ship.moving_right=False
-                if event.key==pygame.K_LEFT:
-                    self.ship.moving_left=False
+                self._check_keyup_events(event)
+    def _check_keydown_events(self,event):
+        if event.key==pygame.K_RIGHT:
+            self.ship.moving_right=True
+        elif event.key==pygame.K_LEFT:
+            self.ship.moving_left=True
+        elif event.key==pygame.K_ESCAPE:
+            self._quit_game()
+    def _check_keyup_events(self,event):
+        if event.key==pygame.K_RIGHT:
+            self.ship.moving_right=False
+        if event.key==pygame.K_LEFT: 
+            self.ship.moving_left=False
                
-    
     def _update_screen(self):
         #更新图像
         self.screen.fill(self.settings.bg_color)
         self.ship.blitme()
         pygame.display.flip()
  
+    def _quit_game(self):
+        pygame.quit()
+        sys.exit()
+
 if __name__ == '__main__': 
     # 创建游戏实例并运行游戏 
     ai = AlienInvasion() 
