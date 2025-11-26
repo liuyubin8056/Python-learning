@@ -14,11 +14,12 @@ class Bullet(Sprite):
         self.rect=pygame.Rect(0,0,self.settings.bullet_width,self.settings.bullet_height)
         self.rect.midtop=ai_game.ship.rect.midtop
         #用浮点数表示子弹的位置
-        self.y=float(self.tect.y)
+        self.y=float(self.rect.y)
 
     def update(self):
         """向上移动子弹"""
         self.y-=self.settings.bullet_speed
+        self.rect.y=self.y
     
     def darw_bullet(self):
         """在屏幕上绘制子弹"""
