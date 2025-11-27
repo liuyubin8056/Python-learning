@@ -6,6 +6,7 @@ class Settings:
         self.screen_width = 1200 
         self.screen_height = 800 
         self.bg_color = (30, 120, 200)
+        self.bullets_allowde=3
         self.ship_speed=1.5
          # 子弹设置
         self.bullet_speed = 2.0 

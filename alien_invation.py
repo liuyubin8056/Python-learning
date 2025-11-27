@@ -4,6 +4,7 @@ import pygame
 from settings import Settings
 from ship import Ship
 from bullet import Bullet
+from alien import Alien
  
 class AlienInvasion: 
     """管理游戏资源和行为的类""" 
@@ -14,7 +15,8 @@ class AlienInvasion:
         self.settings = Settings()
         
         # 先创建屏幕
-        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        # self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode((self.settings.screen_width,self.settings.screen_height))
         self.settings.screen_width = self.screen.get_rect().width 
         self.settings.screen_height = self.screen.get_rect().height 
         
@@ -23,6 +25,8 @@ class AlienInvasion:
         # 然后创建需要屏幕的对象
         self.ship = Ship(self)
         self.bullets=pygame.sprite.Group()
+        self.aliens=pygame.sprite.Group()
+        self._creat_fleet()
         self.clock = pygame.time.Clock()
  
     def run_game(self): 
@@ -30,7 +34,7 @@ class AlienInvasion:
         while True: 
             self._check_events()
             self.ship.update()
-            self.bullets.update()
+            self._update_bullets()
             self._update_screen()            
             self.clock.tick(240)
     
@@ -60,15 +64,29 @@ class AlienInvasion:
 
     def _fire_bullet(self):
         """创建一颗子弹，并将其加入编组bullets"""
-        new_bullet=Bullet(self)
-        self.bullets.add(new_bullet)
+        if len(self.bullets) < self.settings.bullets_allowde:
+            new_bullet=Bullet(self)
+            self.bullets.add(new_bullet)
 
+    def _update_bullets(self):
+        """更新子弹位置并删除已消失的子弹"""
+        self.bullets.update()
+        for bullet in self.bullets.copy():
+            if bullet.rect.bottom<=0:
+                self.bullets.remove(bullet)
+
+    def _creat_fleet(self):
+        """创建一个外星人舰队"""
+        alien=Alien(self)
+        self.aliens.add(alien)    
+    
     def _update_screen(self):
         #更新图像
         self.screen.fill(self.settings.bg_color)
         for bullet in self.bullets.sprites():
             bullet.darw_bullet()
         self.ship.blitme()
+        self.aliens.draw(self.screen)
         pygame.display.flip()
  
     def _quit_game(self):
