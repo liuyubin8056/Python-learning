@@ -7,9 +7,15 @@ class Settings:
         self.screen_height = 800 
         self.bg_color = (30, 120, 200)
         self.bullets_allowde=3
+        #飞船设置
         self.ship_speed=1.5
+        self.ship_limit=3
          # 子弹设置
         self.bullet_speed = 2.0 
-        self.bullet_width = 3 
+        self.bullet_width = 3
         self.bullet_height = 15 
         self.bullet_color = (60, 60, 60)
+        #外星人设置
+        self.alien_speed=1.0
+        self.fleet_drop_speed=10
+        self.fleet_direction=1 #1为向左，-1为向右
