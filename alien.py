@@ -11,7 +11,7 @@ class Alien(Sprite):
         self.settings=ai_game.settings
 
         # 加载外星人图像,调整大小并设置其 rect 属性 
-        self.image = pygame.image.load('images/wzf.jpg')
+        self.image = pygame.image.load('images/hajimi.jpg')
         self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect()
 
