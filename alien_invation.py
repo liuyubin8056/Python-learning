@@ -8,6 +8,7 @@ from ship import Ship
 from bullet import Bullet
 from alien import Alien
 from button import Button
+from scoreboard import Scoreboard
  
 class AlienInvasion: 
     """管理游戏资源和行为的类""" 
@@ -35,6 +36,7 @@ class AlienInvasion:
         self.aliens=pygame.sprite.Group()
         self._creat_fleet()
         self.play_button=Button(self,"Play")
+        self.sb=Scoreboard(self)
  
     def run_game(self): 
         """开始游戏的主循环""" 
@@ -81,6 +83,10 @@ class AlienInvasion:
             self.settings.initialize_dynamic_settings()
             #重置游戏的统计信息
             self.stats.reset_stats()
+            self.sb.prep_score()
+            self.sb.prep_high_score()
+            self.sb.prep_level()
+            self.sb.prep_ships()
             self.game_active=True
             #清空外星人和子弹列表
             self.bullets.empty()
@@ -109,11 +115,19 @@ class AlienInvasion:
         """响应子弹和外星人的碰撞"""
         #检查是否有子弹击中了敌人，如果是，删除子弹和外星人
         collisions=pygame.sprite.groupcollide(self.bullets,self.aliens,True,True)
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score+=self.settings.alien_points*len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
         if not self.aliens:
             #删除现有的子弹并创建一个新的外星舰队
             self.bullets.empty()
             self._creat_fleet()
             self.settings.increase_speed()
+            #提高等级
+            self.stats.level+=1
+            self.sb.prep_level()
 
     def _creat_fleet(self):
         """创建一个外星人舰队"""
@@ -171,6 +185,7 @@ class AlienInvasion:
         if self.stats.ships_left>1:
             #剩余飞船-1
             self.stats.ships_left-=1
+            self.sb.prep_ships()
             #清空外星人列表和子弹列表
             self.bullets.empty()
             self.aliens.empty()
@@ -190,6 +205,7 @@ class AlienInvasion:
             bullet.darw_bullet()
         self.ship.blitme()
         self.aliens.draw(self.screen)
+        self.sb.show_score()
         if not self.game_active:
             self.play_button.drow_button()
         pygame.display.flip()
