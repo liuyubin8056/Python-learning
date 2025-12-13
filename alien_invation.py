@@ -7,7 +7,7 @@ from game_stats import Gamestats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
-from button import Button
+from button import Button,Play_Button,Settings_Button
 from scoreboard import Scoreboard
  
 class AlienInvasion: 
@@ -21,6 +21,7 @@ class AlienInvasion:
         self.clock = pygame.time.Clock()
         #游戏一开始处于非活动状态
         self.game_active=False
+        self.game_firstTime=True
 
         # 先创建屏幕
         # self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -35,18 +36,28 @@ class AlienInvasion:
         self.bullets=pygame.sprite.Group()
         self.aliens=pygame.sprite.Group()
         self._creat_fleet()
+
         self.play_button=Button(self,"Play")
+        self.settings_button=Button(self,"Settings")
+        
+        self.play_button.creat_rect("Play")
+        self.settings_button.creat_rect("Settings")
+        self.play_button.rect.y+=self.play_button.height+10
+        self.settings_button.rect.y-=self.settings_button.height+10
+        
         self.sb=Scoreboard(self)
  
     def run_game(self): 
         """开始游戏的主循环""" 
         while True: 
             self._check_events()
-            if self.game_active:
-                self.ship.update()
-                self._update_bullets()
-                self._update_aliens()
-            self._update_screen()       
+            self._update_screen()
+            if self.game_active and self.game_firstTime:
+                sleep(1.0)
+                self.game_firstTime=False
+                self.update_objects()
+            elif self.game_active and not self.game_firstTime:
+                self.update_objects()
             self.clock.tick(240)
     
     def _check_events(self):
@@ -96,6 +107,12 @@ class AlienInvasion:
             self.ship.center_ship()
             #隐藏光标
             pygame.mouse.set_visible(False)
+    def _check_Settings_button(self,mouse_pos):
+        """在玩家单击Settings按钮时显示设置页面"""
+        button_clicked=self.settings_button.rect.collidepoint(mouse_pos)
+        if button_clicked and not self.game_active:
+            #显示设置页面的代码待添加
+            pass
 
     def _fire_bullet(self):
         """创建一颗子弹，并将其加入编组bullets"""
@@ -199,16 +216,28 @@ class AlienInvasion:
             pygame.mouse.set_visible(True)
     
     def _update_screen(self):
-        #更新图像
+        """更新图像"""
         self.screen.fill(self.settings.bg_color)
+        if not self.game_active:
+            self.play_button.drow_button()
+            self.settings_button.drow_button()
+        else:
+            self.draw_objects()
+        pygame.display.flip()
+
+    def draw_objects(self):
+        """绘制游戏中的对象"""
         for bullet in self.bullets.sprites():
             bullet.darw_bullet()
         self.ship.blitme()
         self.aliens.draw(self.screen)
         self.sb.show_score()
-        if not self.game_active:
-            self.play_button.drow_button()
-        pygame.display.flip()
+
+    def update_objects(self):
+        """更新游戏中的对象"""
+        self.ship.update()
+        self._update_bullets()
+        self._update_aliens()   
  
     def _quit_game(self):
         pygame.quit()
