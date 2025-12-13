@@ -7,7 +7,7 @@ from game_stats import Gamestats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
-from button import Button,Play_Button,Settings_Button
+from button import Button
 from scoreboard import Scoreboard
  
 class AlienInvasion: 
@@ -19,9 +19,11 @@ class AlienInvasion:
         self.settings = Settings()
         self.stats=Gamestats(self)
         self.clock = pygame.time.Clock()
-        #游戏一开始处于非活动状态
+        #状态判断
         self.game_active=False
         self.game_firstTime=True
+        self.open_settings=False
+        self.custom=False
 
         # 先创建屏幕
         # self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -32,19 +34,11 @@ class AlienInvasion:
         pygame.display.set_caption("Alien Invasion")
         
         # 然后创建需要屏幕的对象
+        self._creat_buttons()
         self.ship = Ship(self)
         self.bullets=pygame.sprite.Group()
         self.aliens=pygame.sprite.Group()
         self._creat_fleet()
-
-        self.play_button=Button(self,"Play")
-        self.settings_button=Button(self,"Settings")
-        
-        self.play_button.creat_rect("Play")
-        self.settings_button.creat_rect("Settings")
-        self.play_button.rect.y+=self.play_button.height+10
-        self.settings_button.rect.y-=self.settings_button.height+10
-        
         self.sb=Scoreboard(self)
  
     def run_game(self): 
@@ -69,9 +63,12 @@ class AlienInvasion:
                 self._check_keydown_events(event)
             elif event.type==pygame.KEYUP:
                 self._check_keyup_events(event)
-            elif event.type==pygame.MOUSEBUTTONDOWN:
+            elif event.type==pygame.MOUSEBUTTONDOWN and not self.game_active:
                 mouse_pos=pygame.mouse.get_pos()
                 self._check_play_button(mouse_pos)
+                self._check_Settings_button(mouse_pos)
+                if self.open_settings:
+                    pass
     def _check_keydown_events(self,event):
         if event.key==pygame.K_RIGHT:
             self.ship.moving_right=True
@@ -111,12 +108,83 @@ class AlienInvasion:
         """在玩家单击Settings按钮时显示设置页面"""
         button_clicked=self.settings_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
-            #显示设置页面的代码待添加
-            pass
+            self.open_settings=True
+    def _chekc_low_difficulty_button(self,mouse_pos):
+        """在玩家单击Low按钮时设置低难度"""
+        button_clicked=self.low_difficulty_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.open_settings:
+            self.custom=False
+            self.settings.ship_speed=2.0
+            self.settings.alien_speed=0.5
+            self.settings.bullets_allowed=5
+    def _check_medium_difficulty_button(self,mouse_pos):
+        """在玩家单击Medium按钮时设置中等难度"""
+        button_clicked=self.medium_difficulty_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.open_settings:
+            self.custom=False
+            self.settings.ship_speed=1.5
+            self.settings.alien_speed=1.0
+            self.settings.bullets_allowed=4
+    def _check_high_difficulty_button(self,mouse_pos):
+        """在玩家单击High按钮时设置高难度"""
+        button_clicked=self.high_difficulty_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.open_settings:
+            self.custom=False
+            self.settings.ship_speed=1.0
+            self.settings.alien_speed=1.5
+            self.settings.bullets_allowed=3
+    def _check_custom_difficulty_button(self,mouse_pos):
+        """在玩家单击Custom按钮时设置自定义难度"""
+        button_clicked=self.custom_difficulty_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.open_settings:
+            self.custom=True
+
+
+    def _creat_buttons(self):
+        """创建所有按钮实例"""
+        self.play_button=Button(self,"Play")
+        self.settings_button=Button(self,"Settings")
+        self.low_difficulty_button=Button(self,"Low")
+        self.medium_difficulty_button=Button(self,"Medium")
+        self.high_difficulty_button=Button(self,"High")
+        self.custom_difficulty_button=Button(self,"Custom")
+        self.aliem_speed_button=Button(self,f"Alien Speed : {self.settings.alien_speed}")
+        self.bullet_quantity_button=Button(self,f"Bullet Quantity : {self.settings.bullets_allowed}")
+        self.ship_speed_button=Button(self,f"Ship Speed : {self.settings.ship_speed}")
+        #调整按钮位置
+        self.play_button.rect.y+=self.play_button.height+10
+        self.settings_button.rect.y-=self.settings_button.height+10
+        self.low_difficulty_button.rect.x-=self.low_difficulty_button.width+30
+        self.medium_difficulty_button.rect.x-=self.medium_difficulty_button.width+30
+        self.high_difficulty_button.rect.x-=self.high_difficulty_button.width+30
+        self.custom_difficulty_button.rect.x-=self.custom_difficulty_button.width+30
+        self.aliem_speed_button.rect.x+=self.aliem_speed_button.width+30
+        self.bullet_quantity_button.rect.x+=self.bullet_quantity_button.width+30
+        self.ship_speed_button.rect.x+=self.ship_speed_button.width+30
+        self.low_difficulty_button.rect.y-=self.low_difficulty_button.height*2+30
+        self.medium_difficulty_button.rect.y-=self.medium_difficulty_button.height
+        self.high_difficulty_button.rect.y+=self.high_difficulty_button.height
+        self.custom_difficulty_button.rect.y+=self.custom_difficulty_button.height*2+30
+        self.aliem_speed_button.rect.y-=self.aliem_speed_button.height+30
+        self.ship_speed_button.rect.y+=self.ship_speed_button.height+30
+        #自定义选项按钮加宽
+        self.aliem_speed_button.rect.width=400
+        self.bullet_quantity_button.rect.width=400
+        self.ship_speed_button.rect.width=400
+        #重新渲染按钮文本以适应新位置
+        self.play_button._prep_msg("Play")
+        self.settings_button._prep_msg("Settings")
+        self.low_difficulty_button._prep_msg("Low")
+        self.medium_difficulty_button._prep_msg("Medium")
+        self.high_difficulty_button._prep_msg("High")
+        self.custom_difficulty_button._prep_msg("Custom")
+        self.aliem_speed_button._prep_msg(f"Alien Speed : {self.settings.alien_speed}")
+        self.bullet_quantity_button._prep_msg(f"Bullet Quantity : {self.settings.bullets_allowed}")
+        self.ship_speed_button._prep_msg(f"Ship Speed : {self.settings.ship_speed}")
 
     def _fire_bullet(self):
         """创建一颗子弹，并将其加入编组bullets"""
-        if len(self.bullets) < self.settings.bullets_allowde:
+        if len(self.bullets) < self.settings.bullets_allowed:
             new_bullet=Bullet(self)
             self.bullets.add(new_bullet)
 
@@ -218,12 +286,31 @@ class AlienInvasion:
     def _update_screen(self):
         """更新图像"""
         self.screen.fill(self.settings.bg_color)
-        if not self.game_active:
+        if not self.game_active and not self.open_settings:
             self.play_button.drow_button()
             self.settings_button.drow_button()
+        elif not self.game_active and self.open_settings and not self.custom:
+            self.draw_definied_options()
+            self.play_button.drow_button()
+        elif not self.game_active and self.open_settings and self.custom:
+            self.draw_definied_options
+            self.draw_custom_options()
+            self.play_button.drow_button()
         else:
             self.draw_objects()
         pygame.display.flip()
+
+    def draw_definied_options(self):
+        """绘制难度选项"""
+        self.low_difficulty_button.drow_button()
+        self.medium_difficulty_button.drow_button()
+        self.high_difficulty_button.drow_button()
+        self.custom_difficulty_button.drow_button()
+    def draw_custom_options(self):
+        """绘制自定义选项"""
+        self.aliem_speed_button.drow_button()
+        self.bullet_quantity_button.drow_button()
+        self.ship_speed_button.drow_button()
 
     def draw_objects(self):
         """绘制游戏中的对象"""

@@ -9,7 +9,7 @@ class Settings:
         #飞船设置
         self.ship_limit=3
          # 子弹设置
-        self.bullets_allowde=3
+        self.bullets_allowed=3
         self.bullet_width = 3
         self.bullet_height = 15 
         self.bullet_color = (60, 60, 60)
@@ -37,5 +37,5 @@ class Settings:
         self.ship_speed *= self.speedup_scale 
         self.bullet_speed *= self.speedup_scale 
         self.alien_speed *= self.speedup_scale
-        self.bullets_allowde+=1
+        self.bullets_allowed+=1
         self.alien_points=int(self.alien_points*self.score_scale)
