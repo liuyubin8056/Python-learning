@@ -68,12 +68,22 @@ class AlienInvasion:
                 self._check_play_button(mouse_pos)
                 self._check_Settings_button(mouse_pos)
                 if self.open_settings:
-                    pass
+                    self._check_low_difficulty_button(mouse_pos)
+                    self._check_medium_difficulty_button(mouse_pos)
+                    self._check_high_difficulty_button(mouse_pos)
+                    self._check_custom_difficulty_button(mouse_pos)
+                if self.custom:
+                    self._check_alien_quantity_button(mouse_pos)
+                    self._check_alien_speed_button(mouse_pos)
+                    self._check_bullet_quantity_button(mouse_pos)
+                    self._check_ship_speed_button(mouse_pos)
     def _check_keydown_events(self,event):
         if event.key==pygame.K_RIGHT:
             self.ship.moving_right=True
         elif event.key==pygame.K_LEFT:
             self.ship.moving_left=True
+        elif event.key=pygame.K_q:
+            
         elif event.key==pygame.K_ESCAPE:
             self._quit_game()
         elif event.key==pygame.K_SPACE:
@@ -109,36 +119,53 @@ class AlienInvasion:
         button_clicked=self.settings_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
             self.open_settings=True
-    def _chekc_low_difficulty_button(self,mouse_pos):
+    def _check_low_difficulty_button(self,mouse_pos):
         """在玩家单击Low按钮时设置低难度"""
         button_clicked=self.low_difficulty_button.rect.collidepoint(mouse_pos)
         if button_clicked and self.open_settings:
             self.custom=False
+            self.settings.alien_quantity=16
             self.settings.ship_speed=2.0
             self.settings.alien_speed=0.5
             self.settings.bullets_allowed=5
+            print("Low difficulty selected")
     def _check_medium_difficulty_button(self,mouse_pos):
         """在玩家单击Medium按钮时设置中等难度"""
         button_clicked=self.medium_difficulty_button.rect.collidepoint(mouse_pos)
         if button_clicked and self.open_settings:
             self.custom=False
+            self.settings.alien_quantity=24
             self.settings.ship_speed=1.5
             self.settings.alien_speed=1.0
             self.settings.bullets_allowed=4
+            print("Medium difficulty selected")
     def _check_high_difficulty_button(self,mouse_pos):
         """在玩家单击High按钮时设置高难度"""
         button_clicked=self.high_difficulty_button.rect.collidepoint(mouse_pos)
         if button_clicked and self.open_settings:
             self.custom=False
+            self.settings.alien_quantity=32
             self.settings.ship_speed=1.0
             self.settings.alien_speed=1.5
             self.settings.bullets_allowed=3
+            print("High difficulty selected")
     def _check_custom_difficulty_button(self,mouse_pos):
         """在玩家单击Custom按钮时设置自定义难度"""
         button_clicked=self.custom_difficulty_button.rect.collidepoint(mouse_pos)
         if button_clicked and self.open_settings:
-            self.custom=True
-
+            self.custom = not self.custom
+            if self.custom:
+                print("Custom difficulty selected")
+            else:
+                print("Exited custom difficulty")
+    def _check_alien_quantity_button(self,mouse_pos):
+        """单击外星人数量按钮时更改外星人数量"""
+        button_clicked=self.alien_quantity_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.custom:
+            self.change_customised_value()
+    def change_customised_value(self):
+        pass
+            
 
     def _creat_buttons(self):
         """创建所有按钮实例"""
@@ -148,7 +175,8 @@ class AlienInvasion:
         self.medium_difficulty_button=Button(self,"Medium")
         self.high_difficulty_button=Button(self,"High")
         self.custom_difficulty_button=Button(self,"Custom")
-        self.aliem_speed_button=Button(self,f"Alien Speed : {self.settings.alien_speed}")
+        self.alien_quantity_button=Button(self,f"Alien Quantity : {self.settings.alien_quantity}")
+        self.alien_speed_button=Button(self,f"Alien Speed : {self.settings.alien_speed}")
         self.bullet_quantity_button=Button(self,f"Bullet Quantity : {self.settings.bullets_allowed}")
         self.ship_speed_button=Button(self,f"Ship Speed : {self.settings.ship_speed}")
         #调整按钮位置
@@ -158,17 +186,24 @@ class AlienInvasion:
         self.medium_difficulty_button.rect.x-=self.medium_difficulty_button.width+30
         self.high_difficulty_button.rect.x-=self.high_difficulty_button.width+30
         self.custom_difficulty_button.rect.x-=self.custom_difficulty_button.width+30
-        self.aliem_speed_button.rect.x+=self.aliem_speed_button.width+30
+
+        self.alien_quantity_button.rect.x+=self.alien_quantity_button.width+30
+        self.alien_speed_button.rect.x+=self.alien_speed_button.width+30
         self.bullet_quantity_button.rect.x+=self.bullet_quantity_button.width+30
         self.ship_speed_button.rect.x+=self.ship_speed_button.width+30
+
         self.low_difficulty_button.rect.y-=self.low_difficulty_button.height*2+30
         self.medium_difficulty_button.rect.y-=self.medium_difficulty_button.height
         self.high_difficulty_button.rect.y+=self.high_difficulty_button.height
         self.custom_difficulty_button.rect.y+=self.custom_difficulty_button.height*2+30
-        self.aliem_speed_button.rect.y-=self.aliem_speed_button.height+30
-        self.ship_speed_button.rect.y+=self.ship_speed_button.height+30
+
+        self.alien_quantity_button.rect.y-=self.alien_quantity_button.height*2+30
+        self.alien_speed_button.rect.y-=self.alien_speed_button.height
+        self.bullet_quantity_button.rect.y+=self.bullet_quantity_button.height
+        self.ship_speed_button.rect.y+=self.ship_speed_button.height*2+30
         #自定义选项按钮加宽
-        self.aliem_speed_button.rect.width=400
+        self.alien_quantity_button.rect.width=400
+        self.alien_speed_button.rect.width=400
         self.bullet_quantity_button.rect.width=400
         self.ship_speed_button.rect.width=400
         #重新渲染按钮文本以适应新位置
@@ -178,7 +213,8 @@ class AlienInvasion:
         self.medium_difficulty_button._prep_msg("Medium")
         self.high_difficulty_button._prep_msg("High")
         self.custom_difficulty_button._prep_msg("Custom")
-        self.aliem_speed_button._prep_msg(f"Alien Speed : {self.settings.alien_speed}")
+        self.alien_quantity_button._prep_msg(f"Alien Quantity : {self.settings.alien_quantity}")
+        self.alien_speed_button._prep_msg(f"Alien Speed : {self.settings.alien_speed}")
         self.bullet_quantity_button._prep_msg(f"Bullet Quantity : {self.settings.bullets_allowed}")
         self.ship_speed_button._prep_msg(f"Ship Speed : {self.settings.ship_speed}")
 
@@ -223,7 +259,8 @@ class AlienInvasion:
         current_x,current_y=alien_width,alien_height
         while current_y < (self.settings.screen_height - 3*alien_height):
             while current_x < (self.settings.screen_width - 2*alien_width):
-                self._creat_alien(current_x,current_y)
+                if len(self.aliens)<self.settings.alien_quantity:
+                    self._creat_alien(current_x,current_y)
                 current_x+=2*alien_width
             current_x=alien_width
             current_y+=2*alien_height
@@ -280,7 +317,11 @@ class AlienInvasion:
             #暂停
             sleep(0.5)
         else:
+            sleep(1.0)
             self.game_active=False
+            self.game_firstTime=True
+            self.open_settings=False
+            self.custom=False
             pygame.mouse.set_visible(True)
     
     def _update_screen(self):
@@ -293,7 +334,7 @@ class AlienInvasion:
             self.draw_definied_options()
             self.play_button.drow_button()
         elif not self.game_active and self.open_settings and self.custom:
-            self.draw_definied_options
+            self.draw_definied_options()
             self.draw_custom_options()
             self.play_button.drow_button()
         else:
@@ -308,7 +349,8 @@ class AlienInvasion:
         self.custom_difficulty_button.drow_button()
     def draw_custom_options(self):
         """绘制自定义选项"""
-        self.aliem_speed_button.drow_button()
+        self.alien_quantity_button.drow_button()
+        self.alien_speed_button.drow_button()
         self.bullet_quantity_button.drow_button()
         self.ship_speed_button.drow_button()
 
