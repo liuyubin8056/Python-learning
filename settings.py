@@ -16,6 +16,9 @@ class Settings:
         #外星人设置
         self.alien_quantity=24
         self.fleet_drop_speed=10
+        #盲盒设置
+        self.blindbox_rate=0.1
+        self.blindbox_speed=0.5
         #以什么速度加快游戏的节奏
         self.speedup_scale=1.1
         #击落外星人分数的提高速度

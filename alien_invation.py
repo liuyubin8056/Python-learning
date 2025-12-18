@@ -1,12 +1,14 @@
 import sys 
 import pygame
 from time import sleep
+import random
 
 from settings import Settings
 from game_stats import Gamestats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
+from blindbox import blindbox
 from button import Button
 from scoreboard import Scoreboard
  
@@ -39,6 +41,7 @@ class AlienInvasion:
         self.bullets=pygame.sprite.Group()
         self.aliens=pygame.sprite.Group()
         self._creat_fleet()
+        self.blindboxes=pygame.sprite.Group()
         self.sb=Scoreboard(self)
  
     def run_game(self): 
@@ -82,8 +85,6 @@ class AlienInvasion:
             self.ship.moving_right=True
         elif event.key==pygame.K_LEFT:
             self.ship.moving_left=True
-        elif event.key=pygame.K_q:
-            
         elif event.key==pygame.K_ESCAPE:
             self._quit_game()
         elif event.key==pygame.K_SPACE:
@@ -162,9 +163,38 @@ class AlienInvasion:
         """单击外星人数量按钮时更改外星人数量"""
         button_clicked=self.alien_quantity_button.rect.collidepoint(mouse_pos)
         if button_clicked and self.custom:
-            self.change_customised_value()
-    def change_customised_value(self):
-        pass
+            self.settings.alien_quantity+=4
+            if self.settings.alien_quantity>32:
+                self.settings.alien_quantity=8
+            self.alien_quantity_button._prep_msg(f"Alien Quantity : {self.settings.alien_quantity}")
+            print(f"Alien Quantity set to {self.settings.alien_quantity}")
+    def _check_alien_speed_button(self,mouse_pos):
+        """单击外星人速度按钮时更改外星人速度"""
+        button_clicked=self.alien_speed_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.custom:
+            self.settings.alien_speed+=0.5
+            if self.settings.alien_speed>3.0:
+                self.settings.alien_speed=0.5
+            self.alien_speed_button._prep_msg(f"Alien Speed : {self.settings.alien_speed}")
+            print(f"Alien Speed set to {self.settings.alien_speed}")
+    def _check_bullet_quantity_button(self,mouse_pos):
+        """单击子弹数量按钮时更改子弹数量"""
+        button_clicked=self.bullet_quantity_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.custom:
+            self.settings.bullets_allowed+=1
+            if self.settings.bullets_allowed>6:
+                self.settings.bullets_allowed=3
+            self.bullet_quantity_button._prep_msg(f"Bullet Quantity : {self.settings.bullets_allowed}")
+            print(f"Bullet Quantity set to {self.settings.bullets_allowed}")
+    def _check_ship_speed_button(self,mouse_pos):
+        """单击飞船速度按钮时更改飞船速度"""
+        button_clicked=self.ship_speed_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.custom:
+            self.settings.ship_speed+=0.5
+            if self.settings.ship_speed>3.0:
+                self.settings.ship_speed=1.0
+            self.ship_speed_button._prep_msg(f"Ship Speed : {self.settings.ship_speed}")
+            print(f"Ship Speed set to {self.settings.ship_speed}")
             
 
     def _creat_buttons(self):
@@ -237,6 +267,11 @@ class AlienInvasion:
         #检查是否有子弹击中了敌人，如果是，删除子弹和外星人
         collisions=pygame.sprite.groupcollide(self.bullets,self.aliens,True,True)
         if collisions:
+            if random.random() < self.settings.blindbox_rate:
+                new_blindbox=blindbox(self)
+                new_blindbox.rect.x=collisions[list(collisions.keys())[0]][0].rect.x
+                new_blindbox.rect.y=collisions[list(collisions.keys())[0]][0].rect.y
+                self.blindboxes.add(new_blindbox)
             for aliens in collisions.values():
                 self.stats.score+=self.settings.alien_points*len(aliens)
             self.sb.prep_score()
@@ -249,6 +284,15 @@ class AlienInvasion:
             #提高等级
             self.stats.level+=1
             self.sb.prep_level()
+    
+    def _check_ship_blindbox_collision(self):
+        """响应飞船和盲盒的碰撞"""
+        collisions=pygame.sprite.spritecollide(self.ship,self.blindboxes,True)
+        if collisions:
+            if random.random() < 0.5:
+                self.strenghten()
+            else:
+                self.weaken()
 
     def _creat_fleet(self):
         """创建一个外星人舰队"""
@@ -301,6 +345,13 @@ class AlienInvasion:
             print("Man!")
         #检查是否有外星人到达了屏幕的下边缘
         self._check_aliens_bottom()
+    
+    def _update_blindboxes(self):
+        """更新盲盒位置"""
+        for blindbox in self.blindboxes.sprites():
+            if blindbox.rect.bottom <= self.settings.screen_height:
+                blindbox.rect.y += self.settings.blindbox_speed
+        self._check_ship_blindbox_collision()
     
     def _ship_hit(self):
         """响应飞船和外星人的碰撞"""
@@ -358,6 +409,8 @@ class AlienInvasion:
         """绘制游戏中的对象"""
         for bullet in self.bullets.sprites():
             bullet.darw_bullet()
+        for blindbox in self.blindboxes.sprites():
+            blindbox.screen.blit(blindbox.image, blindbox.rect)
         self.ship.blitme()
         self.aliens.draw(self.screen)
         self.sb.show_score()
@@ -366,7 +419,8 @@ class AlienInvasion:
         """更新游戏中的对象"""
         self.ship.update()
         self._update_bullets()
-        self._update_aliens()   
+        self._update_aliens()
+        self._update_blindboxes() 
  
     def _quit_game(self):
         pygame.quit()
