@@ -1,14 +1,17 @@
 import sys 
 import pygame
 from time import sleep
+import time
 import random
+from pathlib import Path 
+import json 
 
 from settings import Settings
 from game_stats import Gamestats
 from ship import Ship
 from bullet import Bullet
 from alien import Alien
-from blindbox import blindbox
+from blindbox import Blindbox
 from button import Button
 from scoreboard import Scoreboard
  
@@ -26,6 +29,9 @@ class AlienInvasion:
         self.game_firstTime=True
         self.open_settings=False
         self.custom=False
+        self.settings_writen=False
+        self.settings_loaded=False
+        self.settings_reset_time = None
 
         # 先创建屏幕
         # self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -40,7 +46,7 @@ class AlienInvasion:
         self.ship = Ship(self)
         self.bullets=pygame.sprite.Group()
         self.aliens=pygame.sprite.Group()
-        self._creat_fleet()
+        self._creat_fleet(self.settings.alien_quantity)
         self.blindboxes=pygame.sprite.Group()
         self.sb=Scoreboard(self)
  
@@ -49,6 +55,12 @@ class AlienInvasion:
         while True: 
             self._check_events()
             self._update_screen()
+            if self.game_active and not self.settings_loaded:
+                self._load_settings()
+                self.settings_loaded=True
+            if self.game_active and not self.settings_writen:
+                self._write_settings()
+                self.settings_writen=True
             if self.game_active and self.game_firstTime:
                 sleep(1.0)
                 self.game_firstTime=False
@@ -56,6 +68,26 @@ class AlienInvasion:
             elif self.game_active and not self.game_firstTime:
                 self.update_objects()
             self.clock.tick(240)
+        
+    def _write_settings(self):
+        """将当前设置写入settings.json文件"""
+        settings_data={
+            "alien_quantity":self.settings.alien_quantity,
+            "ship_speed":self.settings.ship_speed,
+            "alien_speed":self.settings.alien_speed,
+            "bullets_allowed":self.settings.bullets_allowed
+        }
+        settings_path=Path('settings.json')
+        with settings_path.open('w') as f:
+            json.dump(settings_data,f,indent=4)
+    def _load_settings(self):
+        """从settings.json文件加载设置"""
+        with open('settings.json', 'r', encoding='utf-8') as f:
+            settings_data = json.load(f)
+        self.alien_quantity=settings_data["alien_quantity"]
+        self.settings.ship_speed=settings_data["ship_speed"]
+        self.settings.alien_speed=settings_data["alien_speed"]
+        self.settings.bullets_allowed=settings_data["bullets_allowed"]
     
     def _check_events(self):
         # 侦听键盘和鼠标事件 
@@ -111,7 +143,7 @@ class AlienInvasion:
             self.bullets.empty()
             self.aliens.empty()
             #创建一个新的外星舰队，并将飞船放置在屏幕底部中央
-            self._creat_fleet()
+            self._creat_fleet(self.settings.alien_quantity)
             self.ship.center_ship()
             #隐藏光标
             pygame.mouse.set_visible(False)
@@ -196,7 +228,6 @@ class AlienInvasion:
             self.ship_speed_button._prep_msg(f"Ship Speed : {self.settings.ship_speed}")
             print(f"Ship Speed set to {self.settings.ship_speed}")
             
-
     def _creat_buttons(self):
         """创建所有按钮实例"""
         self.play_button=Button(self,"Play")
@@ -268,7 +299,7 @@ class AlienInvasion:
         collisions=pygame.sprite.groupcollide(self.bullets,self.aliens,True,True)
         if collisions:
             if random.random() < self.settings.blindbox_rate:
-                new_blindbox=blindbox(self)
+                new_blindbox=Blindbox(self)
                 new_blindbox.rect.x=collisions[list(collisions.keys())[0]][0].rect.x
                 new_blindbox.rect.y=collisions[list(collisions.keys())[0]][0].rect.y
                 self.blindboxes.add(new_blindbox)
@@ -279,7 +310,7 @@ class AlienInvasion:
         if not self.aliens:
             #删除现有的子弹并创建一个新的外星舰队
             self.bullets.empty()
-            self._creat_fleet()
+            self._creat_fleet(self.settings.alien_quantity)
             self.settings.increase_speed()
             #提高等级
             self.stats.level+=1
@@ -288,13 +319,20 @@ class AlienInvasion:
     def _check_ship_blindbox_collision(self):
         """响应飞船和盲盒的碰撞"""
         collisions=pygame.sprite.spritecollide(self.ship,self.blindboxes,True)
-        if collisions:
+        for blindbox in collisions:  # 遍历所有碰撞的盲盒
             if random.random() < 0.5:
-                self.strenghten()
+                blindbox.strengthen()  # 调用盲盒的 strengthen 方法
+                for alien in self.aliens.sprites():
+                    if random.random() < 0.3:
+                        alien.kill()
             else:
-                self.weaken()
+                blindbox.weaken()  # 调用盲盒的 weaken 方法
+                self._creat_fleet(8)
+            # 无论强化还是弱化，都设置5秒后重置
+            self.settings_reset_time = pygame.time.get_ticks() + 3000
+                    
 
-    def _creat_fleet(self):
+    def _creat_fleet(self,alien_quantity):
         """创建一个外星人舰队"""
         #创建一个外星人，再不断添加，直到没有空间添加外星人为止
         #外星人的间距为外星人的宽度和高度
@@ -303,7 +341,7 @@ class AlienInvasion:
         current_x,current_y=alien_width,alien_height
         while current_y < (self.settings.screen_height - 3*alien_height):
             while current_x < (self.settings.screen_width - 2*alien_width):
-                if len(self.aliens)<self.settings.alien_quantity:
+                if len(self.aliens)<alien_quantity:
                     self._creat_alien(current_x,current_y)
                 current_x+=2*alien_width
             current_x=alien_width
@@ -363,7 +401,7 @@ class AlienInvasion:
             self.bullets.empty()
             self.aliens.empty()
             #创建一个新的外星舰队，并将飞船放置在屏幕底部中央
-            self._creat_fleet()
+            self._creat_fleet(self.settings.alien_quantity)
             self.ship.center_ship()
             #暂停
             sleep(0.5)
@@ -415,14 +453,23 @@ class AlienInvasion:
         self.aliens.draw(self.screen)
         self.sb.show_score()
 
+    def _update_timer(self):
+        """检查计时器"""
+        if self.settings_reset_time and pygame.time.get_ticks() >= self.settings_reset_time:
+            self._load_settings()
+            self.settings_reset_time = None
+
     def update_objects(self):
         """更新游戏中的对象"""
         self.ship.update()
         self._update_bullets()
         self._update_aliens()
-        self._update_blindboxes() 
+        self._update_blindboxes()
+        self._update_timer()
  
     def _quit_game(self):
+        """退出游戏"""
+        self.stats.save_high_score()
         pygame.quit()
         sys.exit()
 

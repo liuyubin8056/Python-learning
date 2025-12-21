@@ -1,7 +1,8 @@
 import pygame
 from pygame.sprite import Sprite
+import json 
 
-class blindbox(Sprite):
+class Blindbox(Sprite):
     """掉落盲盒"""
 
     def __init__(self,ai_game):
@@ -16,3 +17,14 @@ class blindbox(Sprite):
         #每个盲盒最初都在屏幕的左上角附近
         self.rect.x=self.rect.width
         self.rect.y=self.rect.height
+    
+    def strengthen(self):
+        """幸运盲盒"""
+        self.settings.ship_speed+=1
+        self.settings.bullets_allowed+=2
+    def weaken(self):
+        """不幸盲盒"""
+        if self.settings.ship_speed>1.5:
+            self.settings.ship_speed-=1
+        if self.settings.bullets_allowed>1:
+            self.settings.bullets_allowed-=1

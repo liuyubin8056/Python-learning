@@ -1,0 +1,6 @@
+{
+    "alien_quantity": 24,
+    "ship_speed": 1.5,
+    "alien_speed": 1.0,
+    "bullets_allowed": 4
+}
