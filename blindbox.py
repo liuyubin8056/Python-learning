@@ -1,6 +1,5 @@
 import pygame
 from pygame.sprite import Sprite
-import json 
 
 class Blindbox(Sprite):
     """掉落盲盒"""

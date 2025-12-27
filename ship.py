@@ -14,16 +14,20 @@ class Ship(Sprite):
         self.image = pygame.transform.scale(self.image, (50, 50))
         self.rect = self.image.get_rect()
         self.x=float(self.rect.x)
+        self.y=float(self.rect.y)
         # 每艘新飞船都放在屏幕底部的中央 
         self.rect.midbottom = self.screen_rect.midbottom
         #移动标志
         self.moving_right=False
         self.moving_left=False
+        self.moving_down=False
+        self.moving_up=False
 
     def center_ship(self):
         """将飞船放置在底部中央"""
         self.rect.midbottom=self.screen_rect.midbottom
         self.x=float(self.rect.x)
+        self.y=float(self.rect.y)
 
     def update(self):
         #根据移动标志调整飞船位置
@@ -34,6 +38,13 @@ class Ship(Sprite):
                 self.rect.x-=self.setting.ship_speed
             else:
                 self.rect.x-=self.setting.ship_speed+1
+        if self.moving_down and self.rect.bottom < self.screen_rect.bottom:
+            self.rect.y+=self.setting.ship_speed
+        if self.moving_up and self.rect.top > 0:
+            if self.setting.ship_speed-int(self.setting.ship_speed)==0:
+                self.rect.y-=self.setting.ship_speed
+            else:
+                self.rect.y-=self.setting.ship_speed+1
             
     def blitme(self): 
         """在指定位置绘制飞船""" 

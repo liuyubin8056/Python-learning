@@ -1,7 +1,6 @@
 import sys 
 import pygame
 from time import sleep
-import time
 import random
 from pathlib import Path 
 import json 
@@ -32,6 +31,7 @@ class AlienInvasion:
         self.settings_writen=False
         self.settings_loaded=False
         self.settings_reset_time = None
+        self.pause=False
 
         # 先创建屏幕
         # self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -52,20 +52,21 @@ class AlienInvasion:
  
     def run_game(self): 
         """开始游戏的主循环""" 
+        #启动游戏立即导入设置
+        if not self.settings_loaded:
+            self._load_settings()
+            self.settings_loaded=True
         while True: 
             self._check_events()
             self._update_screen()
-            if self.game_active and not self.settings_loaded:
-                self._load_settings()
-                self.settings_loaded=True
             if self.game_active and not self.settings_writen:
                 self._write_settings()
                 self.settings_writen=True
-            if self.game_active and self.game_firstTime:
+            if self.game_active and self.game_firstTime and not self.pause:
                 sleep(1.0)
                 self.game_firstTime=False
                 self.update_objects()
-            elif self.game_active and not self.game_firstTime:
+            elif self.game_active and not self.game_firstTime and not self.pause:
                 self.update_objects()
             self.clock.tick(240)
         
@@ -84,10 +85,11 @@ class AlienInvasion:
         """从settings.json文件加载设置"""
         with open('settings.json', 'r', encoding='utf-8') as f:
             settings_data = json.load(f)
-        self.alien_quantity=settings_data["alien_quantity"]
+        self.settings.alien_quantity=settings_data["alien_quantity"]
         self.settings.ship_speed=settings_data["ship_speed"]
         self.settings.alien_speed=settings_data["alien_speed"]
         self.settings.bullets_allowed=settings_data["bullets_allowed"]
+        self.redraw_buttons()
     
     def _check_events(self):
         # 侦听键盘和鼠标事件 
@@ -102,6 +104,8 @@ class AlienInvasion:
                 mouse_pos=pygame.mouse.get_pos()
                 self._check_play_button(mouse_pos)
                 self._check_Settings_button(mouse_pos)
+                self._check_continue_button(mouse_pos)
+                self._check_quit_button(mouse_pos)
                 if self.open_settings:
                     self._check_low_difficulty_button(mouse_pos)
                     self._check_medium_difficulty_button(mouse_pos)
@@ -117,8 +121,15 @@ class AlienInvasion:
             self.ship.moving_right=True
         elif event.key==pygame.K_LEFT:
             self.ship.moving_left=True
+        elif event.key==pygame.K_UP:
+            self.ship.moving_up=True
+        elif event.key==pygame.K_DOWN:
+            self.ship.moving_down=True
         elif event.key==pygame.K_ESCAPE:
-            self._quit_game()
+            if self.game_active:
+                self.pause_game()
+            else:
+                self.continue_game()
         elif event.key==pygame.K_SPACE:
             self._fire_bullet()
     def _check_keyup_events(self,event):
@@ -126,6 +137,10 @@ class AlienInvasion:
             self.ship.moving_right=False
         if event.key==pygame.K_LEFT: 
             self.ship.moving_left=False
+        if event.key==pygame.K_UP:
+            self.ship.moving_up=False
+        if event.key==pygame.K_DOWN:
+            self.ship.moving_down=False
     def _check_play_button(self,mouse_pos):
         """在玩家单击Play按钮时开始新游戏"""
         button_clicked=self.play_button.rect.collidepoint(mouse_pos)
@@ -152,6 +167,16 @@ class AlienInvasion:
         button_clicked=self.settings_button.rect.collidepoint(mouse_pos)
         if button_clicked and not self.game_active:
             self.open_settings=True
+    def _check_continue_button(self,mouse_pos):
+        """在玩家单击Continue按钮时继续游戏"""
+        button_clicked=self.continue_button.rect.collidepoint(mouse_pos)
+        if button_clicked and self.pause:
+            self.continue_game()
+    def _check_quit_button(self,mouse_pos):
+        """在玩家单击Quit按钮时退出游戏"""
+        button_clicked=self.quit_button.rect.collidepoint(mouse_pos)
+        if button_clicked:
+            self._quit_game()
     def _check_low_difficulty_button(self,mouse_pos):
         """在玩家单击Low按钮时设置低难度"""
         button_clicked=self.low_difficulty_button.rect.collidepoint(mouse_pos)
@@ -227,9 +252,23 @@ class AlienInvasion:
                 self.settings.ship_speed=1.0
             self.ship_speed_button._prep_msg(f"Ship Speed : {self.settings.ship_speed}")
             print(f"Ship Speed set to {self.settings.ship_speed}")
-            
+    
+    def pause_game(self):
+        """暂停游戏"""
+        self.game_active=False
+        self.pause=True
+        self.open_settings=False
+        pygame.mouse.set_visible(True)
+    def continue_game(self):
+        """继续游戏"""
+        self.game_active=True
+        self.pause=False
+        pygame.mouse.set_visible(False)
+
     def _creat_buttons(self):
         """创建所有按钮实例"""
+        self.quit_button=Button(self,"Quit")
+        self.continue_button=Button(self,"Continue")
         self.play_button=Button(self,"Play")
         self.settings_button=Button(self,"Settings")
         self.low_difficulty_button=Button(self,"Low")
@@ -241,7 +280,7 @@ class AlienInvasion:
         self.bullet_quantity_button=Button(self,f"Bullet Quantity : {self.settings.bullets_allowed}")
         self.ship_speed_button=Button(self,f"Ship Speed : {self.settings.ship_speed}")
         #调整按钮位置
-        self.play_button.rect.y+=self.play_button.height+10
+        self.quit_button.rect.y+=self.play_button.height+10
         self.settings_button.rect.y-=self.settings_button.height+10
         self.low_difficulty_button.rect.x-=self.low_difficulty_button.width+30
         self.medium_difficulty_button.rect.x-=self.medium_difficulty_button.width+30
@@ -267,8 +306,11 @@ class AlienInvasion:
         self.alien_speed_button.rect.width=400
         self.bullet_quantity_button.rect.width=400
         self.ship_speed_button.rect.width=400
-        #重新渲染按钮文本以适应新位置
+    def redraw_buttons(self):
+        """重新渲染所有按钮文本以适应新位置"""
+        self.quit_button._prep_msg("Quit")
         self.play_button._prep_msg("Play")
+        self.continue_button._prep_msg("Continue")
         self.settings_button._prep_msg("Settings")
         self.low_difficulty_button._prep_msg("Low")
         self.medium_difficulty_button._prep_msg("Medium")
@@ -329,8 +371,7 @@ class AlienInvasion:
                 blindbox.weaken()  # 调用盲盒的 weaken 方法
                 self._creat_fleet(8)
             # 无论强化还是弱化，都设置5秒后重置
-            self.settings_reset_time = pygame.time.get_ticks() + 3000
-                    
+            self.settings_reset_time = pygame.time.get_ticks() + 3000                   
 
     def _creat_fleet(self,alien_quantity):
         """创建一个外星人舰队"""
@@ -374,7 +415,7 @@ class AlienInvasion:
                 break
 
     def _update_aliens(self):
-        """检查是否有外星人位于屏幕边缘，并更新外形舰队中所有外星人的位置"""
+        """检查是否有外星人位于屏幕边缘，并更新外星舰队中所有外星人的位置"""
         self._check_fleet_edges()
         self.aliens.update()
         #检测外星人和飞船之间的碰撞
@@ -412,13 +453,25 @@ class AlienInvasion:
             self.open_settings=False
             self.custom=False
             pygame.mouse.set_visible(True)
+            sleep(0.5)
+            # 输出嘲讽语句
+            print("\n" + "="*50)
+            print("Game Over! 游戏结束！")
+            print("="*50)
+            print(" 就这？外星人都打不过，还想保卫地球？")
+            print(" 建议回新手村再练练吧！")
+            print(" 你的飞船驾驶技术和我家猫玩键盘差不多！")
+            print(" 外星人都比你努力，至少他们一直在前进！")
+            print(" 别灰心，也许俄罗斯方块更适合你？")
+            print("="*50 + "\n")
     
     def _update_screen(self):
         """更新图像"""
         self.screen.fill(self.settings.bg_color)
-        if not self.game_active and not self.open_settings:
+        if not self.game_active and not self.open_settings and not self.pause:
             self.play_button.drow_button()
             self.settings_button.drow_button()
+            self.quit_button.drow_button()
         elif not self.game_active and self.open_settings and not self.custom:
             self.draw_definied_options()
             self.play_button.drow_button()
@@ -426,6 +479,9 @@ class AlienInvasion:
             self.draw_definied_options()
             self.draw_custom_options()
             self.play_button.drow_button()
+        elif not self.game_active and self.pause:
+            self.continue_button.drow_button()
+            self.quit_button.drow_button()
         else:
             self.draw_objects()
         pygame.display.flip()
