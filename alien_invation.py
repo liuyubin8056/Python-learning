@@ -1,4 +1,4 @@
-import sys 
+import sys
 import pygame
 from time import sleep
 import random
@@ -13,6 +13,7 @@ from alien import Alien
 from blindbox import Blindbox
 from button import Button
 from scoreboard import Scoreboard
+from auido import Audio
  
 class AlienInvasion: 
     """管理游戏资源和行为的类""" 
@@ -22,7 +23,9 @@ class AlienInvasion:
         pygame.init() 
         self.settings = Settings()
         self.stats=Gamestats(self)
+        self.auido=Audio()
         self.clock = pygame.time.Clock()
+        self.auido.play_bg_music()
         #状态判断
         self.game_active=False
         self.game_firstTime=True
@@ -130,7 +133,7 @@ class AlienInvasion:
                 self.pause_game()
             else:
                 self.continue_game()
-        elif event.key==pygame.K_SPACE:
+        elif event.key==pygame.K_SPACE and self.game_active:
             self._fire_bullet()
     def _check_keyup_events(self,event):
         if event.key==pygame.K_RIGHT:
@@ -323,6 +326,7 @@ class AlienInvasion:
 
     def _fire_bullet(self):
         """创建一颗子弹，并将其加入编组bullets"""
+        self.auido.play_sound('shoot')
         if len(self.bullets) < self.settings.bullets_allowed:
             new_bullet=Bullet(self)
             self.bullets.add(new_bullet)
@@ -347,6 +351,7 @@ class AlienInvasion:
                 self.blindboxes.add(new_blindbox)
             for aliens in collisions.values():
                 self.stats.score+=self.settings.alien_points*len(aliens)
+                self.auido.play_sound('hit')
             self.sb.prep_score()
             self.sb.check_high_score()
         if not self.aliens:
@@ -362,15 +367,19 @@ class AlienInvasion:
         """响应飞船和盲盒的碰撞"""
         collisions=pygame.sprite.spritecollide(self.ship,self.blindboxes,True)
         for blindbox in collisions:  # 遍历所有碰撞的盲盒
+            if self.settings_reset_time and pygame.time.get_ticks() < self.settings_reset_time:
+                self._load_settings() # 如果有未过期的效果，立即重置
             if random.random() < 0.5:
+                self.auido.play_sound('lucky_box')
                 blindbox.strengthen()  # 调用盲盒的 strengthen 方法
                 for alien in self.aliens.sprites():
                     if random.random() < 0.3:
                         alien.kill()
             else:
+                self.auido.play_sound('unlucky_box')
                 blindbox.weaken()  # 调用盲盒的 weaken 方法
                 self._creat_fleet(8)
-            # 无论强化还是弱化，都设置5秒后重置
+            # 无论强化还是弱化，都设置3秒后重置
             self.settings_reset_time = pygame.time.get_ticks() + 3000                   
 
     def _creat_fleet(self,alien_quantity):
@@ -435,6 +444,7 @@ class AlienInvasion:
     def _ship_hit(self):
         """响应飞船和外星人的碰撞"""
         if self.stats.ships_left>1:
+            self.auido.play_sound('injury')
             #剩余飞船-1
             self.stats.ships_left-=1
             self.sb.prep_ships()
@@ -447,6 +457,7 @@ class AlienInvasion:
             #暂停
             sleep(0.5)
         else:
+            self.auido.play_sound('game_over')
             sleep(1.0)
             self.game_active=False
             self.game_firstTime=True
