@@ -30,7 +30,6 @@ class AirObject:
     def update_position(self, dt):
         """根据受力更新加速度、速度和位置"""
         self.update_forces()
-        self.acceleration=self.forces/self.mass
         self.velocity+=self.acceleration*dt
         self.position+=self.velocity*dt
         self.rect.x=self.position.x/10
@@ -57,9 +56,22 @@ class AirObject:
         else:
             lift_direction=Vector2(0,0)
         lift=lift_direction*lift_magnitude
+        #推力
+        trust=self.get_trust(self.velocity.length())
         #合力
-        self.forces=drag+lift
-
+        self.forces=drag+lift+trust
+        self.check_g_limit()
+    def get_trust(self,v):
+        """获取推力向量"""
+        thrust_magnitude=68646.55+102.34*v-0.125*v**2+2.12e-4*v**3-1.87e-7*v**4+4.92e-11*v**5
+        thrust_direction=Vector2.from_angle(self.angle_deg)
+        return thrust_direction*thrust_magnitude
+    def check_g_limit(self):
+        """检查最大过载，限制机动"""
+        self.acceleration=self.forces/self.mass
+        g_force=self.acceleration.length()/9.81
+        if g_force>self.max_g:
+            pass
 
     #--- 以下为辅助函数，用于角度计算 ---
     def normalize_angle_deg(self,angle_deg):
