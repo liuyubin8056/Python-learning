@@ -3,6 +3,7 @@ import pygame
 import time
 
 from settings import Settings
+from air_object import Air_Object
 
 class Dance_over_sky:
     """管理游戏资源和行为的类"""
@@ -15,6 +16,7 @@ class Dance_over_sky:
         self.screen = pygame.display.set_mode((self.settings.screen_width, self.settings.screen_height))
         pygame.display.set_caption("Dance Over Sky")
         #再创建需要屏幕的对象
+        self.air_object=Air_Object(self)
         #判断状态
         self.game_active=False
 
@@ -36,12 +38,22 @@ class Dance_over_sky:
                 self._check_keyup_events(event)
     def _check_keydown_events(self, event):
         """响应按键按下"""
+        if event.key==pygame.K_q:
+            self.air_object.turn_left=True
+        elif event.key==pygame.K_e:
+            self.air_object.turn_right=True
     def _check_keyup_events(self, event):
         """响应按键松开"""
+        if event.key==pygame.K_q:
+            self.air_object.turn_left=False
+        elif event.key==pygame.K_e:
+            self.air_object.turn_right=False
 
     def _update_screen(self):
         """更新屏幕上的图像，并切换到新屏幕"""
         self.screen.fill(self.settings.bg_color)
+        self.air_object.update(1.0/self.settings.tick)
+        self.air_object.draw()
         pygame.display.flip()
     
     def quit_game(self):
